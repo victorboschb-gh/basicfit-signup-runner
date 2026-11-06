@@ -58,6 +58,7 @@ interface Job {
   exitCode: number | null;
   error: string | null;
   logDir: string | null;
+  mailboxAddress: string | null;
   logFile: string;
 }
 
@@ -96,6 +97,7 @@ function publicJob(job: Job) {
     exitCode: job.exitCode,
     error: job.error,
     logDir: job.logDir,
+    mailboxAddress: job.mailboxAddress,
     urls: {
       self: `/jobs/${job.id}`,
       log: `/jobs/${job.id}/log`,
@@ -119,6 +121,7 @@ function loadJobs(): void {
     for (const { f } of files) {
       const raw = JSON.parse(readFileSync(join(JOBS_DIR, f), "utf8")) as Job;
       raw.inlineProfile = raw.inlineProfile ?? false;
+      raw.mailboxAddress = raw.mailboxAddress ?? null;
       if (raw.status === "running" || raw.status === "queued") {
         raw.status = "failed";
         raw.endedAt = raw.endedAt ?? now();
@@ -153,6 +156,12 @@ function appendLog(job: Job, chunk: Buffer | string): void {
   const last = matches.at(-1)?.[1]?.trim();
   if (last && last !== job.logDir) {
     job.logDir = last;
+    saveJob(job);
+  }
+
+  const mailbox = [...buffer.matchAll(/Buzón desechable:\s*([^\s]+@[^\s]+)/gi)].at(-1)?.[1];
+  if (mailbox && mailbox !== job.mailboxAddress) {
+    job.mailboxAddress = mailbox;
     saveJob(job);
   }
 }
@@ -458,6 +467,7 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
       exitCode: null,
       error: null,
       logDir: null,
+      mailboxAddress: null,
       logFile: join(JOBS_DIR, `${id}.log`),
     };
     jobs.set(id, job);
