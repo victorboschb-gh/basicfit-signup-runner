@@ -147,6 +147,8 @@ function activeDuplicate(person: Person, mode: Mode, step: Step): Job | undefine
 function appendLog(job: Job, chunk: Buffer | string): void {
   const text = chunk.toString();
   appendFileSync(job.logFile, text, "utf8");
+  // Reflejo en la consola del servicio (EasyPanel), prefijado por job.
+  process.stdout.write(text.replace(/^(?=.)/gm, `[job ${job.id.slice(0, 8)}] `));
 
   let buffer = (logBuffers.get(job.id) ?? "") + text;
   if (buffer.length > MAX_LOG_BYTES) buffer = buffer.slice(-MAX_LOG_BYTES);

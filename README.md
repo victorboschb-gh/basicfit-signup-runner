@@ -108,7 +108,13 @@ queda en `queued`.
 - Navegador **visible** (`headless: false`) bajo Xvfb en el contenedor.
 - Sin proxies.
 - Si aparece un reto anti-bot, el script **no lo resuelve**: avisa y espera
-  (`CHALLENGE_WAIT_MINUTES`). Con navegador visible la web responde 200.
+  (`CHALLENGE_WAIT_MINUTES`) o falla con un mensaje claro.
+- El alta de `member.basic-fit.com` funciona. El registro en
+  `login.basic-fit.com` está protegido por Akamai/Check Point: con Playwright
+  devuelve `428` o "Algo ha ido mal" y **no envía** el correo de contraseña. Es
+  detección de automatización (`webdriverDetected`), no del correo temporal. Ese
+  paso necesita una persona en un navegador normal; no se implementan parches de
+  evasión.
 - Los pasos 2, 4 y 5 dependen de correos reales; la primera ejecución `live` es
   su auditoría.
 - Automatizar el alta puede ir contra las condiciones del sitio. Alcance: dos

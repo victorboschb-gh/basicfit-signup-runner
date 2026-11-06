@@ -106,14 +106,40 @@ export async function runRegister(
     }
 
     const submit = page.getByRole("button", { name: /^Continuar$/i }).first();
+    const resetResponse = page
+      .waitForResponse(
+        (r) => r.url().includes("/reset-password") && r.request().method() === "POST",
+        { timeout: 45_000 },
+      )
+      .catch(() => null);
+
     await submit.click();
-    await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {});
+    const resetResp = await resetResponse;
+    await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
     await page.waitForTimeout(3_000);
-    await waitPastChallenge(page, config.challengeWaitMs);
     await stepSnap(page, runDir, "07-register-enviado");
 
     const afterSubmit = await bodyText(page);
-    info(`Tras Continuar: ${page.url()}`);
+    info(
+      `Tras Continuar: ${page.url()} ${
+        resetResp ? `(reset-password HTTP ${resetResp.status()})` : "(sin respuesta de reset-password)"
+      }`,
+    );
+
+    if (resetResp?.status() === 428) {
+      await stepSnap(page, runDir, "07-register-bloqueado");
+      throw new Error(
+        "Basic-Fit bloqueó el registro con un reto anti-bot (HTTP 428, Check Point). " +
+          "Este paso necesita una persona en un navegador normal; no se espera el correo.",
+      );
+    }
+    if (/algo ha ido mal|int[eé]ntalo de nuevo/i.test(afterSubmit)) {
+      await stepSnap(page, runDir, "07-register-bloqueado");
+      throw new Error(
+        "El registro devolvió 'Algo ha ido mal' (reto anti-bot). " +
+          "Este paso necesita una persona en un navegador normal; no se espera el correo.",
+      );
+    }
     if (/no (existe|encontramos)|no est[aá] registrad/i.test(afterSubmit)) {
       throw new Error("La web no reconoce ese correo como registrado; el alta del paso 1 no llegó a crear la cuenta");
     }
