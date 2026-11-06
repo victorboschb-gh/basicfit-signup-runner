@@ -77,6 +77,13 @@ export async function runRegister(
     info(`HTTP ${response?.status() ?? "?"} ${page.url()}`);
     await waitPastChallenge(page, config.challengeWaitMs);
     await dismissCookies(page);
+
+    const emailInput = page
+      .getByLabel(/Correo electr[oó]nico/i)
+      .or(page.locator('input[name="email"], input[type="email"]'))
+      .first();
+    // La app es React: domcontentloaded puede llegar antes de que pinte el formulario.
+    await emailInput.waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
     await stepSnap(page, runDir, "05-register");
 
     const text = await bodyText(page);
@@ -84,10 +91,6 @@ export async function runRegister(
       throw new Error("No parece la pantalla de registro/establecer contraseña");
     }
 
-    const emailInput = page
-      .getByLabel(/Correo electr[oó]nico/i)
-      .or(page.locator('input[name="email"], input[type="email"]'))
-      .first();
     await emailInput.fill(mailbox.address);
     info(`Email introducido: ${mailbox.address}`);
 
@@ -176,6 +179,14 @@ export async function runRegister(
   info(`HTTP enlace -> ${passwordPage.url()}`);
   await waitPastChallenge(passwordPage, config.challengeWaitMs);
   await dismissCookies(passwordPage);
+  // Igual que en el registro: espera a que React pinte antes de buscar campos.
+  await passwordPage
+    .waitForFunction(
+      "() => /contrase[ñn]a|correo electr[oó]nico/i.test(document.body ? document.body.innerText : '')",
+      undefined,
+      { timeout: 30_000 },
+    )
+    .catch(() => {});
   await stepSnap(passwordPage, runDir, "09-password-page");
 
   // Algunos enlaces piden confirmar el email antes de la contraseña.
