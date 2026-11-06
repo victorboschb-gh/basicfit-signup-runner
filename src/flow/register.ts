@@ -99,7 +99,10 @@ export async function runRegister(
       throw new Error(`Email no verificado: esperado "${mailbox.address}", leído "${actualEmail}"`);
     }
 
-    const continueButton = page.getByRole("button", { name: /^Continuar$/i }).first();
+    const continueButton = page
+      .locator("#root")
+      .getByRole("button", { name: /^Continuar$/i })
+      .first();
     info(`Botón Continuar habilitado: ${await continueButton.isEnabled().catch(() => false)}`);
     await stepSnap(page, runDir, "06-register-email");
 
@@ -108,7 +111,10 @@ export async function runRegister(
       return null;
     }
 
-    const submit = page.getByRole("button", { name: /^Continuar$/i }).first();
+    const submit = page
+      .locator("#root")
+      .getByRole("button", { name: /^Continuar$/i })
+      .first();
     const resetResponse = page
       .waitForResponse(
         (r) => r.url().includes("/reset-password") && r.request().method() === "POST",
@@ -210,18 +216,14 @@ export async function runRegister(
   info(`Campos de contraseña rellenados: ${filled}`);
   await stepSnap(passwordPage, runDir, "10-password-relleno");
 
+  // Solo botones de la app (#root); el banner de Cookiebot tiene sus propios submit.
   const submitPassword = passwordPage
-    .getByRole("button", {
-      name: /^(Continuar|Guardar|Establecer|Crear|Confirmar|Aceptar|Enviar|Hecho)$/i,
-    })
+    .locator('#root button[data-cy="submit-button"], #root button[type="submit"]')
     .first();
   if ((await submitPassword.count()) === 0) {
-    const fallback = passwordPage.locator('button[type="submit"]').first();
-    if ((await fallback.count()) === 0) throw new Error("No encuentro el botón para guardar la contraseña");
-    await fallback.click();
-  } else {
-    await submitPassword.click();
+    throw new Error("No encuentro el botón para guardar la contraseña");
   }
+  await submitPassword.click();
 
   await passwordPage.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {});
   await passwordPage.waitForTimeout(3_000);
@@ -229,12 +231,21 @@ export async function runRegister(
 
   const finalText = await bodyText(passwordPage);
   const success =
-    /contrase[ñn]a.*(creada|establecida|actualizada|guardada)|tu cuenta est[aá] lista|bienvenid|inicia sesi[oó]n/i.test(
+    /contrase[ñn]a.*(creada|establecida|actualizada|guardada)|finalizado con [eé]xito|nueva contrase[ñn]a|tu cuenta est[aá] lista|bienvenid|inicia sesi[oó]n/i.test(
       finalText,
     );
   if (success) {
     ok(`Contraseña creada. Pantalla final: ${passwordPage.url()}`);
   } else {
+    const visiblePasswords = await passwordPage
+      .locator('input[type="password"]')
+      .evaluateAll((els) => els.filter((el) => (el as HTMLElement).offsetParent !== null).length)
+      .catch(() => 0);
+    if (visiblePasswords > 0) {
+      throw new Error(
+        "El formulario de contraseña sigue visible tras enviarlo: no se estableció la contraseña.",
+      );
+    }
     warn(`No reconozco confirmación explícita. Revisa 11-final. URL: ${passwordPage.url()}`);
   }
 

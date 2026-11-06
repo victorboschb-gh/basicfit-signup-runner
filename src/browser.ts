@@ -104,14 +104,19 @@ export async function waitPastChallenge(page: Page, timeoutMs: number): Promise<
 }
 
 export async function dismissCookies(page: Page): Promise<void> {
-  for (const name of [/^Rechazar$/i, /^Aceptar$/i]) {
-    const button = page.getByRole("button", { name }).first();
-    if (await button.isVisible().catch(() => false)) {
-      await button.click({ timeout: 5_000 }).catch(() => {});
-      info(`Banner de cookies: ${name.source}`);
-      await page.waitForTimeout(600);
-      return;
+  // El banner de Cookiebot carga por JS: puede no estar en el primer instante.
+  const deadline = Date.now() + 4_000;
+  while (Date.now() < deadline) {
+    for (const name of [/^Rechazar$/i, /^Aceptar$/i]) {
+      const button = page.getByRole("button", { name }).first();
+      if (await button.isVisible().catch(() => false)) {
+        await button.click({ timeout: 5_000 }).catch(() => {});
+        info(`Banner de cookies: ${name.source}`);
+        await page.waitForTimeout(600);
+        return;
+      }
     }
+    await page.waitForTimeout(500);
   }
 }
 
