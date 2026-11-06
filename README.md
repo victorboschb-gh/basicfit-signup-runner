@@ -98,10 +98,10 @@ queda en `queued`.
 
 - Datos personales: variables `ME_*` y `PARTNER_*`. En EasyPanel se editan en la
   pestaña Environment del servicio (visual, sin comandos).
-- Buzón: API de [mail.tm](https://mail.tm), sin clave. Crea una dirección
-  aleatoria `bf...@fldubai.com`, la guarda en `runs/state/<persona>.json` y
-  consulta `/messages` cada 5 s. Espera por defecto 20 min, ampliable con
-  `MAIL_WAIT_MINUTES`.
+- Buzón: API de [mail.tm](https://mail.tm), sin clave. Crea en cada ejecución
+  una dirección nueva (10-13 letras aleatorias + dígitos) sobre el dominio
+  activo, la guarda en `runs/state/<persona>.json` y consulta `/messages` cada
+  5 s. Espera por defecto 20 min, ampliable con `MAIL_WAIT_MINUTES`.
 
 ## Requisitos y límites
 

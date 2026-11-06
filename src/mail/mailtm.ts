@@ -162,10 +162,23 @@ export interface CreatedMailbox {
   token: string;
 }
 
+function pick<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)]!;
+}
+
+/**
+ * Parte local distinta en cada ejecución: 10-13 letras aleatorias + 2-4 dígitos.
+ * Sin prefijo fijo ni nombres reales, que mail.tm rechaza como "username no válido".
+ */
 function randomLocalPart(): string {
-  const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let out = "bf";
-  for (let i = 0; i < 12; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+  const letters = "abcdefghijklmnopqrstuvwxyz";
+  const digits = "0123456789";
+  const letterCount = 10 + Math.floor(Math.random() * 4);
+  const digitCount = 2 + Math.floor(Math.random() * 3);
+
+  let out = "";
+  for (let i = 0; i < letterCount; i++) out += letters[Math.floor(Math.random() * letters.length)];
+  for (let i = 0; i < digitCount; i++) out += digits[Math.floor(Math.random() * digits.length)];
   return out;
 }
 
@@ -181,7 +194,7 @@ async function pickDomain(): Promise<string> {
   const page = await api<Domain[] | Hydra<Domain>>("/domains?page=1");
   const domains = collection(page).filter((d) => d.isActive && !d.isPrivate);
   if (domains.length === 0) throw new Error("mail.tm no ofrece ningún dominio activo");
-  const domain = domains[0]!;
+  const domain = pick(domains);
   info(`Dominio de correo: ${domain.domain}`);
   return domain.domain;
 }

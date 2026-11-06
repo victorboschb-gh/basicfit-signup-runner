@@ -1,7 +1,11 @@
 import type { Page, Response } from "playwright-core";
 import { launchBrowser, newContext } from "./browser.ts";
 
-const email = process.argv[2] ?? "bf04h2g2m2wf46@fldubai.com";
+const email = process.argv[2] ?? "";
+if (!email) {
+  console.error("Uso: tsx src/probe-register3.ts <email>");
+  process.exit(1);
+}
 const hardStop = setTimeout(() => {
   console.log("HARD_TIMEOUT");
   process.exit(2);
