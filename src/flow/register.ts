@@ -1,4 +1,4 @@
-import type { Page } from "playwright";
+import type { Page } from "playwright-core";
 import type { AppConfig } from "../config.ts";
 import type { Mailbox, MailMessage } from "../mail/types.ts";
 import { info, ok, warn, step, error } from "../logger.ts";

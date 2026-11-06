@@ -1,5 +1,6 @@
 import "dotenv/config";
-import { chromium, type Browser, type Page } from "playwright";
+import type { Browser, Page } from "playwright-core";
+import { launchBrowser, newContext } from "./browser.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { initLogging, info, ok, warn, error, step, runDirectory } from "./logger.ts";
@@ -124,11 +125,7 @@ function detectChallenge(page: Page, bodyText: string): string | null {
 
 async function probe(browser: Browser, target: { name: string; url: string }): Promise<void> {
   step(`Abriendo ${target.name}: ${target.url}`);
-  const context = await browser.newContext({
-    locale: "es-ES",
-    timezoneId: "Europe/Madrid",
-    viewport: { width: 1366, height: 900 },
-  });
+  const context = await newContext(browser);
   const page = await context.newPage();
   const out = join(runDirectory(), `discover-${target.name}`);
   mkdirSync(out, { recursive: true });
@@ -193,7 +190,7 @@ async function main(): Promise<void> {
   initLogging(dir);
   info(`Salida: ${dir}`);
 
-  const browser = await chromium.launch({ headless: process.env.HEADFUL !== "1" });
+  const browser = await launchBrowser({ headless: process.env.HEADFUL !== "1" });
 
   const only = process.env.ONLY;
   for (const t of TARGETS) {

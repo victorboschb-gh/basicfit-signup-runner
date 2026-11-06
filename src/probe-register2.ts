@@ -1,4 +1,5 @@
-import { chromium } from "playwright";
+import type { Page } from "playwright-core";
+import { launchBrowser, newContext } from "./browser.ts";
 
 const email = process.argv[2] ?? "bf04h2g2m2wf46@fldubai.com";
 const hardStop = setTimeout(() => {
@@ -7,14 +8,14 @@ const hardStop = setTimeout(() => {
 }, 100_000);
 hardStop.unref();
 
-async function tail(page: import("playwright").Page): Promise<string> {
+async function tail(page: Page): Promise<string> {
   const t = await page.evaluate<string>("document.body ? document.body.innerText : ''");
   return t.replace(/\s+/g, " ").slice(-450);
 }
 
 async function main(): Promise<void> {
-  const browser = await chromium.launch({ headless: false });
-  const context = await browser.newContext({ locale: "es-ES", timezoneId: "Europe/Madrid" });
+  const browser = await launchBrowser();
+  const context = await newContext(browser);
   const page = await context.newPage();
 
   let lastStatus = 0;

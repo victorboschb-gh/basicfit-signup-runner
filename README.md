@@ -20,7 +20,7 @@ Servidor en `src/api.ts`, pensado para lanzarse como servicio en EasyPanel.
 
 ```bash
 npm install
-npx playwright install chromium
+npm run browser:fetch   # descarga el Firefox anti-detección de Camoufox
 cp api.env.example api.env
 # rellena api.env (token + datos)
 set -a; source api.env; set +a
@@ -105,16 +105,18 @@ queda en `queued`.
 
 ## Requisitos y límites
 
-- Navegador **visible** (`headless: false`) bajo Xvfb en el contenedor.
+- Navegador **Camoufox** (Firefox anti-detección) sobre Playwright, **visible**
+  (`headless: false`) bajo Xvfb en el contenedor. La identidad (navigator,
+  pantalla, WebGL, fuentes, audio, WebRTC) se falsea dentro del motor y el ratón
+  se mueve de forma humana. `CAMOUFOX_HEADLESS=1` para ocultarlo y
+  `CAMOUFOX_GEOIP=1` para alinear zona horaria/idioma con la IP de salida.
 - Sin proxies.
 - Si aparece un reto anti-bot, el script **no lo resuelve**: avisa y espera
-  (`CHALLENGE_WAIT_MINUTES`) o falla con un mensaje claro.
-- El alta de `member.basic-fit.com` funciona. El registro en
-  `login.basic-fit.com` está protegido por Akamai/Check Point: con Playwright
-  devuelve `428` o "Algo ha ido mal" y **no envía** el correo de contraseña. Es
-  detección de automatización (`webdriverDetected`), no del correo temporal. Ese
-  paso necesita una persona en un navegador normal; no se implementan parches de
-  evasión.
+  (`CHALLENGE_WAIT_MINUTES`) o falla con un mensaje claro. Camoufox reduce la
+  detección, pero no la garantiza: Akamai/Check Point puede seguir pidiendo un
+  reto humano.
+- `invisible_playwright` es solo Python; este proyecto es TypeScript, así que el
+  motor anti-detección es Camoufox (mismo objetivo, soporte Node.js).
 - Los pasos 2, 4 y 5 dependen de correos reales; la primera ejecución `live` es
   su auditoría.
 - Automatizar el alta puede ir contra las condiciones del sitio. Alcance: dos

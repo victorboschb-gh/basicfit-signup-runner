@@ -1,5 +1,6 @@
 import "dotenv/config";
-import { chromium, type Page } from "playwright";
+import type { Page } from "playwright-core";
+import { launchBrowser, newContext } from "./browser.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { initLogging, info, ok, warn, step, runDirectory } from "./logger.ts";
@@ -81,12 +82,8 @@ async function settle(page: Page): Promise<void> {
 async function main(): Promise<void> {
   const dir = join(process.cwd(), "runs", `probe-signup-${new Date().toISOString().replace(/[:.]/g, "-")}`);
   initLogging(dir);
-  const browser = await chromium.launch({ headless: false });
-  const context = await browser.newContext({
-    locale: "es-ES",
-    timezoneId: "Europe/Madrid",
-    viewport: { width: 1366, height: 900 },
-  });
+  const browser = await launchBrowser();
+  const context = await newContext(browser);
   const page = await context.newPage();
 
   try {

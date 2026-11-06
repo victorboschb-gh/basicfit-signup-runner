@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { chromium } from "playwright";
+import { launchBrowser, newContext } from "./browser.ts";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 
@@ -9,12 +9,8 @@ const TARGETS = [
 ];
 
 async function main(): Promise<void> {
-  const browser = await chromium.launch({ headless: false });
-  const context = await browser.newContext({
-    locale: "es-ES",
-    timezoneId: "Europe/Madrid",
-    viewport: { width: 1366, height: 900 },
-  });
+  const browser = await launchBrowser();
+  const context = await newContext(browser);
 
   const out: unknown[] = [];
   for (const url of TARGETS) {

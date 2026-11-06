@@ -1,8 +1,6 @@
 FROM mcr.microsoft.com/playwright:v1.64.1-noble
 
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
-    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
-    PLAYWRIGHT_NO_SANDBOX=1 \
+ENV PLAYWRIGHT_NO_SANDBOX=1 \
     NODE_OPTIONS=--no-warnings \
     PORT=8787 \
     BIND=0.0.0.0
@@ -15,6 +13,9 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
+
+# Descarga el Firefox anti-detección de Camoufox (una vez por imagen).
+RUN npx camoufox fetch
 
 COPY tsconfig.json ./
 COPY src ./src

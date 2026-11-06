@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+import { launchBrowser, newContext } from "./browser.ts";
 
 const email = process.argv[2];
 if (!email) {
@@ -7,8 +7,8 @@ if (!email) {
 }
 
 async function main(): Promise<void> {
-  const browser = await chromium.launch({ headless: false });
-  const context = await browser.newContext({ locale: "es-ES", timezoneId: "Europe/Madrid", viewport: { width: 1366, height: 900 } });
+  const browser = await launchBrowser();
+  const context = await newContext(browser);
   const page = await context.newPage();
 
   page.on("request", (req) => {

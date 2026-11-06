@@ -1,10 +1,10 @@
-import { chromium } from "playwright";
+import { launchBrowser, newContext } from "./browser.ts";
 
 const URL = "https://member.basic-fit.com/es-ES/signup/BlackFriday_FitTogether?bf-locale=es-ES&bf-country=ES";
 
 async function main(): Promise<void> {
-  const browser = await chromium.launch({ headless: false });
-  const page = await (await browser.newContext({ locale: "es-ES" })).newPage();
+  const browser = await launchBrowser();
+  const page = await (await newContext(browser)).newPage();
   await page.goto(URL, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await page.waitForTimeout(4_000);
 

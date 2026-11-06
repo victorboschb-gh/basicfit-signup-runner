@@ -1,4 +1,5 @@
-import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
+import { Camoufox } from "camoufox";
+import type { Browser, BrowserContext, Page } from "playwright-core";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { info, warn, step } from "./logger.ts";
@@ -12,18 +13,49 @@ const BLOCK_PATTERNS = [
   "px-captcha",
 ];
 
-export async function launchBrowser(): Promise<Browser> {
+export interface LaunchOptions {
+  headless?: boolean;
+}
+
+/**
+ * Lanza Camoufox (Firefox anti-detección) a través de Playwright.
+ * Reemplaza al Chromium de Playwright: la identidad (navigator, pantalla,
+ * WebGL, fuentes, audio, WebRTC) se falsea dentro del motor y el ratón se
+ * mueve de forma humana.
+ */
+export async function launchBrowser(opts: LaunchOptions = {}): Promise<Browser> {
   // Requisito del proyecto: navegador visible, sin headless y sin proxies.
-  // En contenedores que corren como root hace falta --no-sandbox.
-  const args = process.env.PLAYWRIGHT_NO_SANDBOX === "1" ? ["--no-sandbox"] : [];
-  return chromium.launch({ headless: false, args });
+  // En contenedores que corren como root se desactiva el sandbox de Firefox.
+  const headless = opts.headless ?? process.env.CAMOUFOX_HEADLESS === "1";
+  const noSandbox = process.env.PLAYWRIGHT_NO_SANDBOX === "1";
+  // Opcional: coherentiza zona horaria/idioma/WebRTC con la IP de salida.
+  const geoip = process.env.CAMOUFOX_GEOIP === "1";
+
+  return Camoufox({
+    headless,
+    humanize: true,
+    locale: ["es-ES"],
+    ...(noSandbox
+      ? {
+          env: {
+            ...process.env,
+            MOZ_DISABLE_CONTENT_SANDBOX: "1",
+            MOZ_DISABLE_GMP_SANDBOX: "1",
+          },
+        }
+      : {}),
+    ...(geoip ? { geoip: true } : {}),
+  });
 }
 
 export async function newContext(browser: Browser): Promise<BrowserContext> {
+  // Con geoip la zona horaria la fija Camoufox según la IP de salida.
+  if (process.env.CAMOUFOX_GEOIP === "1") {
+    return browser.newContext({ locale: "es-ES" });
+  }
   return browser.newContext({
     locale: "es-ES",
     timezoneId: "Europe/Madrid",
-    viewport: { width: 1366, height: 900 },
   });
 }
 

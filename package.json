@@ -3,18 +3,20 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Alta real en Basic-Fit con Playwright: dos personas, buzon desechable, mismo contexto de navegador.",
+  "description": "Alta real en Basic-Fit con Camoufox (Firefox anti-detección) sobre Playwright: dos personas, buzon desechable, mismo contexto de navegador.",
   "scripts": {
     "api": "tsx src/api.ts",
     "run": "tsx src/run.ts",
     "run:live": "tsx src/run.ts --mode=live",
     "typecheck": "tsc --noEmit",
     "discover": "node src/discover.ts",
-    "probe:signup": "node src/probe-signup.ts"
+    "probe:signup": "node src/probe-signup.ts",
+    "browser:fetch": "camoufox fetch"
   },
   "dependencies": {
+    "camoufox": "^0.5.9",
     "dotenv": "^17.2.3",
-    "playwright": "1.64.1"
+    "playwright-core": "1.62.1"
   },
   "devDependencies": {
     "@types/node": "^24.10.0",

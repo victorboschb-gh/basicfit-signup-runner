@@ -1,4 +1,5 @@
-import { chromium, type Page } from "playwright";
+import type { Page, Response } from "playwright-core";
+import { launchBrowser, newContext } from "./browser.ts";
 
 const email = process.argv[2] ?? "bf04h2g2m2wf46@fldubai.com";
 const hardStop = setTimeout(() => {
@@ -9,7 +10,7 @@ hardStop.unref();
 
 async function attempt(page: Page, label: string): Promise<number> {
   let status = 0;
-  const handler = async (res: import("playwright").Response) => {
+  const handler = async (res: Response) => {
     if (res.url().includes("/reset-password")) {
       status = res.status();
       console.log(`${label} RESET ${status}`, (await res.text().catch(() => "")).slice(0, 200));
@@ -35,8 +36,8 @@ async function abck(page: Page): Promise<string> {
 }
 
 async function main(): Promise<void> {
-  const browser = await chromium.launch({ headless: false });
-  const context = await browser.newContext({ locale: "es-ES", timezoneId: "Europe/Madrid" });
+  const browser = await launchBrowser();
+  const context = await newContext(browser);
   const page = await context.newPage();
 
   await page.goto("https://login.basic-fit.com/register", { waitUntil: "domcontentloaded", timeout: 60_000 });
