@@ -52,9 +52,19 @@ Todas las rutas salvo `/health` exigen `Authorization: Bearer <API_TOKEN>`.
   "mode": "audit",         // audit (no envía) | live
   "step": "all",           // all | signup | register (parcial solo en audit)
   "resume": false,         // reanuda sin duplicar el alta
-  "force": false           // salta la deduplicación de jobs activos
+  "force": false,          // salta la deduplicación de jobs activos
+  "profile": {             // opcional: manda sobre las variables ME_*/PARTNER_*
+    "firstName": "Victor",
+    "lastName": "Pérez García",
+    "birthDate": "1990-01-31",
+    "phone": ""
+  }
 }
 ```
+
+Si se envía `profile`, el API lo inyecta en el proceso del job y no hace falta
+configurar datos personales en EasyPanel. El perfil no se guarda en el historial
+de jobs del servidor (sí queda en el historial de ejecuciones de n8n).
 
 Ejemplo:
 

@@ -3,3 +3,4 @@ runs/
 .env
 *.log
 api.env
+n8n-basicfit.json

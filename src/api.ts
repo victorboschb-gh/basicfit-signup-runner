@@ -37,12 +37,20 @@ type Mode = "audit" | "live";
 type Step = "all" | "signup" | "register";
 type JobStatus = "queued" | "running" | "succeeded" | "failed" | "timeout" | "cancelled";
 
+interface Profile {
+  firstName: string;
+  lastName: string;
+  birthDate: string;
+  phone?: string;
+}
+
 interface Job {
   id: string;
   person: Person;
   mode: Mode;
   step: Step;
   resume: boolean;
+  inlineProfile: boolean;
   status: JobStatus;
   createdAt: string;
   startedAt: string | null;
@@ -54,6 +62,7 @@ interface Job {
 }
 
 const jobs = new Map<string, Job>();
+const profiles = new Map<string, Profile>();
 const queue: string[] = [];
 const logBuffers = new Map<string, string>();
 const children = new Map<string, ChildProcess>();
@@ -79,6 +88,7 @@ function publicJob(job: Job) {
     mode: job.mode,
     step: job.step,
     resume: job.resume,
+    inlineProfile: job.inlineProfile,
     status: job.status,
     createdAt: job.createdAt,
     startedAt: job.startedAt,
@@ -108,6 +118,7 @@ function loadJobs(): void {
 
     for (const { f } of files) {
       const raw = JSON.parse(readFileSync(join(JOBS_DIR, f), "utf8")) as Job;
+      raw.inlineProfile = raw.inlineProfile ?? false;
       if (raw.status === "running" || raw.status === "queued") {
         raw.status = "failed";
         raw.endedAt = raw.endedAt ?? now();
@@ -190,12 +201,25 @@ function startJob(job: Job): void {
   const command = useXvfb ? "xvfb-run" : process.execPath;
   const args = useXvfb ? ["-a", tsx, script, ...runArgs] : [tsxCli, script, ...runArgs];
 
+  const childEnv: NodeJS.ProcessEnv = {
+    ...process.env,
+    PLAYWRIGHT_NO_SANDBOX: process.env.PLAYWRIGHT_NO_SANDBOX ?? "1",
+  };
+
+  // Si el flujo manda el perfil en el POST, estos valores mandan sobre el env.
+  const profile = profiles.get(job.id);
+  if (profile) {
+    const prefix = job.person === "me" ? "ME" : "PARTNER";
+    childEnv[`${prefix}_FIRST_NAME`] = profile.firstName;
+    childEnv[`${prefix}_LAST_NAME`] = profile.lastName;
+    childEnv[`${prefix}_BIRTH_DATE`] = profile.birthDate;
+    if (profile.phone) childEnv[`${prefix}_PHONE`] = profile.phone;
+    appendLog(job, `[api] Perfil recibido en la petición (${prefix}_*); no se usa el env.\n`);
+  }
+
   const child = spawn(command, args, {
     cwd: ROOT,
-    env: {
-      ...process.env,
-      PLAYWRIGHT_NO_SANDBOX: process.env.PLAYWRIGHT_NO_SANDBOX ?? "1",
-    },
+    env: childEnv,
     detached: true,
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -223,6 +247,7 @@ function startJob(job: Job): void {
     job.endedAt = now();
     saveJob(job);
     children.delete(job.id);
+    profiles.delete(job.id);
     running = null;
     pump();
   });
@@ -230,6 +255,7 @@ function startJob(job: Job): void {
   child.on("exit", (code, signal) => {
     clearTimeout(timer);
     children.delete(job.id);
+    profiles.delete(job.id);
     if (job.status !== "timeout" && job.status !== "cancelled") {
       job.status = code === 0 ? "succeeded" : "failed";
       job.error = code === 0 ? null : `Salida ${code ?? "null"}${signal ? ` (${signal})` : ""}`;
@@ -269,6 +295,31 @@ async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> 
   } catch {
     throw new HttpError(400, "JSON inválido");
   }
+}
+
+function parseProfile(value: unknown): Profile {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new HttpError(400, "profile debe ser un objeto");
+  }
+  const raw = value as Record<string, unknown>;
+  const firstName = String(raw.firstName ?? "").trim();
+  const lastName = String(raw.lastName ?? "").trim();
+  const birthDate = String(raw.birthDate ?? "").trim();
+  const phone = String(raw.phone ?? "").trim();
+
+  if (!firstName || firstName.length > 100) {
+    throw new HttpError(400, "profile.firstName es obligatorio (máx. 100 caracteres)");
+  }
+  if (!lastName || lastName.length > 100) {
+    throw new HttpError(400, "profile.lastName es obligatorio (máx. 100 caracteres)");
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate) && !/^\d{1,2}[/-]\d{1,2}[/-]\d{4}$/.test(birthDate)) {
+    throw new HttpError(400, "profile.birthDate debe ser AAAA-MM-DD o DD/MM/AAAA");
+  }
+  if (phone.length > 30) {
+    throw new HttpError(400, "profile.phone es demasiado largo");
+  }
+  return { firstName, lastName, birthDate, phone: phone || undefined };
 }
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
@@ -390,6 +441,8 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
       throw new HttpError(429, `Cola llena (${MAX_QUEUE}); espera a que termine algún job`);
     }
 
+    const profile = body.profile === undefined ? null : parseProfile(body.profile);
+
     const id = randomUUID();
     const job: Job = {
       id,
@@ -397,6 +450,7 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
       mode,
       step,
       resume,
+      inlineProfile: profile !== null,
       status: "queued",
       createdAt: now(),
       startedAt: null,
@@ -407,8 +461,12 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
       logFile: join(JOBS_DIR, `${id}.log`),
     };
     jobs.set(id, job);
+    if (profile) profiles.set(id, profile);
     saveJob(job);
-    appendLog(job, `[api] Job ${id}: person=${person} mode=${mode} step=${step} resume=${resume}\n`);
+    appendLog(
+      job,
+      `[api] Job ${id}: person=${person} mode=${mode} step=${step} resume=${resume} profile=${profile ? "inline" : "env"}\n`,
+    );
     queue.push(id);
     pump();
 
@@ -437,6 +495,7 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
         if (idx >= 0) queue.splice(idx, 1);
         job.status = "cancelled";
         job.endedAt = now();
+        profiles.delete(id);
         saveJob(job);
       } else if (job.status === "running") {
         job.status = "cancelled";
