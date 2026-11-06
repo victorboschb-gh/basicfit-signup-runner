@@ -108,7 +108,7 @@ class MailTmMailbox implements Mailbox {
   }
 
   async waitForMessage(options: WaitOptions): Promise<MailMessage> {
-    const pollMs = options.pollMs ?? 5_000;
+    const pollMs = options.pollMs ?? 15_000;
     const started = Date.now();
     const since = options.since ? Date.parse(options.since) : 0;
     const exclude = new Set(options.excludeIds ?? []);
