@@ -1,0 +1,24 @@
+{
+  "name": "basicfit-signup",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Alta real en Basic-Fit con Playwright: dos personas, buzon desechable, mismo contexto de navegador.",
+  "scripts": {
+    "api": "tsx src/api.ts",
+    "run": "tsx src/run.ts",
+    "run:live": "tsx src/run.ts --mode=live",
+    "typecheck": "tsc --noEmit",
+    "discover": "node src/discover.ts",
+    "probe:signup": "node src/probe-signup.ts"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "playwright": "1.64.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
