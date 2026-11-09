@@ -101,7 +101,7 @@ queda en `queued`.
 - Buzón: API de [mail.tm](https://mail.tm), sin clave. Crea en cada ejecución
   una dirección nueva (10-13 letras aleatorias + dígitos) sobre el dominio
   activo, la guarda en `runs/state/<persona>.json` y consulta `/messages` cada
-  15 s. Espera por defecto 20 min, ampliable con `MAIL_WAIT_MINUTES`.
+  15 s. Espera por defecto 25 min, ampliable con `MAIL_WAIT_MINUTES`.
 
 ## Requisitos y límites
 

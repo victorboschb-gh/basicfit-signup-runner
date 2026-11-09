@@ -87,7 +87,7 @@ export function loadConfig(): AppConfig {
       process.env.SIGNUP_URL ??
       "https://member.basic-fit.com/es-ES/signup/BlackFriday_FitTogether",
     registerUrl: process.env.REGISTER_URL ?? "https://login.basic-fit.com/register",
-    mailWaitMs: Number(process.env.MAIL_WAIT_MINUTES ?? 20) * 60_000,
+    mailWaitMs: Number(process.env.MAIL_WAIT_MINUTES ?? 25) * 60_000,
     challengeWaitMs: Number(process.env.CHALLENGE_WAIT_MINUTES ?? 5) * 60_000,
     resume: process.argv.includes("--resume"),
     runsDir: process.env.RUNS_DIR ?? "runs",

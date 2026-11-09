@@ -28,7 +28,7 @@ const TOKEN_HASH = createHash("sha256").update(TOKEN).digest();
 
 const PORT = Number(process.env.PORT ?? 8787);
 const BIND = process.env.BIND ?? "0.0.0.0";
-const JOB_TIMEOUT_MS = Number(process.env.JOB_TIMEOUT_MINUTES ?? 45) * 60_000;
+const JOB_TIMEOUT_MS = Number(process.env.JOB_TIMEOUT_MINUTES ?? 60) * 60_000;
 const MAX_QUEUE = Number(process.env.MAX_QUEUE ?? 4);
 const MAX_LOG_BYTES = 200_000;
 
