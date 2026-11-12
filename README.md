@@ -110,7 +110,10 @@ queda en `queued`.
   pantalla, WebGL, fuentes, audio, WebRTC) se falsea dentro del motor y el ratón
   se mueve de forma humana. `CAMOUFOX_HEADLESS=1` para ocultarlo y
   `CAMOUFOX_GEOIP=1` para alinear zona horaria/idioma con la IP de salida.
-- Sin proxies.
+- Sin proxies por defecto. Opcional: `PROXY_SERVER` (+ usuario/contraseña) si la
+  IP del VPS está marcada por Check Point; con proxy, geoip ajusta la identidad.
+- Tras el alta espera `SIGNUP_SETTLE_SECONDS` (180) antes del registro y
+  reintenta una vez si salta el anti-bot (`REGISTER_RETRY_SECONDS`).
 - Si aparece un reto anti-bot, el script **no lo resuelve**: avisa y espera
   (`CHALLENGE_WAIT_MINUTES`) o falla con un mensaje claro. Camoufox reduce la
   detección, pero no la garantiza: Akamai/Check Point puede seguir pidiendo un

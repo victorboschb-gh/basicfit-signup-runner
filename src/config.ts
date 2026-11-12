@@ -22,6 +22,8 @@ export interface AppConfig {
   registerUrl: string;
   mailWaitMs: number;
   challengeWaitMs: number;
+  signupSettleMs: number;
+  registerRetryMs: number;
   resume: boolean;
   runsDir: string;
 }
@@ -89,6 +91,8 @@ export function loadConfig(): AppConfig {
     registerUrl: process.env.REGISTER_URL ?? "https://login.basic-fit.com/register",
     mailWaitMs: Number(process.env.MAIL_WAIT_MINUTES ?? 25) * 60_000,
     challengeWaitMs: Number(process.env.CHALLENGE_WAIT_MINUTES ?? 5) * 60_000,
+    signupSettleMs: Number(process.env.SIGNUP_SETTLE_SECONDS ?? 180) * 1_000,
+    registerRetryMs: Number(process.env.REGISTER_RETRY_SECONDS ?? 180) * 1_000,
     resume: process.argv.includes("--resume"),
     runsDir: process.env.RUNS_DIR ?? "runs",
   };

@@ -1,4 +1,4 @@
-import type { Page } from "playwright-core";
+import type { Page, Response } from "playwright-core";
 import type { AppConfig } from "../config.ts";
 import type { Mailbox, MailMessage } from "../mail/types.ts";
 import { info, ok, warn, step, error } from "../logger.ts";
@@ -115,20 +115,41 @@ export async function runRegister(
       .locator("#root")
       .getByRole("button", { name: /^Continuar$/i })
       .first();
-    const resetResponse = page
-      .waitForResponse(
-        (r) => r.url().includes("/reset-password") && r.request().method() === "POST",
-        { timeout: 45_000 },
-      )
-      .catch(() => null);
 
-    await submit.click();
-    const resetResp = await resetResponse;
-    await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
-    await page.waitForTimeout(3_000);
+    const performReset = async (): Promise<{ resetResp: Response | null; after: string }> => {
+      const resetResponse = page
+        .waitForResponse(
+          (r) => r.url().includes("/reset-password") && r.request().method() === "POST",
+          { timeout: 45_000 },
+        )
+        .catch(() => null);
+      await submit.click();
+      const resetResp = await resetResponse;
+      await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
+      await page.waitForTimeout(3_000);
+      return { resetResp, after: await bodyText(page) };
+    };
+
+    let { resetResp, after: afterSubmit } = await performReset();
+    const isBlocked = (): boolean =>
+      resetResp?.status() === 428 || /algo ha ido mal|int[eé]ntalo de nuevo/i.test(afterSubmit);
+
+    const maxAttempts = 2;
+    for (let attempt = 1; attempt < maxAttempts && isBlocked(); attempt++) {
+      warn(
+        `Registro bloqueado (${resetResp ? `HTTP ${resetResp.status()}` : "sin respuesta"}); ` +
+          `reintento ${attempt}/${maxAttempts - 1} en ${Math.round(config.registerRetryMs / 1000)}s`,
+      );
+      await page.waitForTimeout(config.registerRetryMs);
+      await page.goto(config.registerUrl, { waitUntil: "domcontentloaded", timeout: 90_000 });
+      await waitPastChallenge(page, config.challengeWaitMs);
+      await dismissCookies(page);
+      await emailInput.waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
+      await emailInput.fill(mailbox.address);
+      ({ resetResp, after: afterSubmit } = await performReset());
+    }
+
     await stepSnap(page, runDir, "07-register-enviado");
-
-    const afterSubmit = await bodyText(page);
     info(
       `Tras Continuar: ${page.url()} ${
         resetResp ? `(reset-password HTTP ${resetResp.status()})` : "(sin respuesta de reset-password)"

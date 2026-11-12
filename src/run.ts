@@ -109,6 +109,7 @@ async function main(): Promise<void> {
   const page = await context.newPage();
   const runSignupStep = config.step === "all" || config.step === "signup";
   const runRegisterStep = config.step === "all" || config.step === "register";
+  const justSignedUp = runSignupStep && !state.signupDone;
 
   try {
     if (runSignupStep && !state.signupDone) {
@@ -147,6 +148,12 @@ async function main(): Promise<void> {
     }
 
     if (runRegisterStep && !state.registerDone) {
+      // Si el alta acaba de enviarse, deja que Basic-Fit la asiente antes del registro.
+      if (justSignedUp && config.mode === "live" && config.signupSettleMs > 0) {
+        info(`Espero ${Math.round(config.signupSettleMs / 1000)}s antes del registro para que el alta se asiente.`);
+        await new Promise((r) => setTimeout(r, config.signupSettleMs));
+      }
+
       const result = await runRegister(
         page,
         config,

@@ -28,13 +28,24 @@ export async function launchBrowser(opts: LaunchOptions = {}): Promise<Browser> 
   // En contenedores que corren como root se desactiva el sandbox de Firefox.
   const headless = opts.headless ?? process.env.CAMOUFOX_HEADLESS === "1";
   const noSandbox = process.env.PLAYWRIGHT_NO_SANDBOX === "1";
-  // Opcional: coherentiza zona horaria/idioma/WebRTC con la IP de salida.
-  const geoip = process.env.CAMOUFOX_GEOIP === "1";
+  // Proxy opcional (residencial español recomendado si el VPS está marcado).
+  const proxyServer = process.env.PROXY_SERVER?.trim();
+  const proxy = proxyServer
+    ? {
+        server: proxyServer,
+        ...(process.env.PROXY_USERNAME && process.env.PROXY_PASSWORD
+          ? { username: process.env.PROXY_USERNAME, password: process.env.PROXY_PASSWORD }
+          : {}),
+      }
+    : undefined;
+  // Con proxy o CAMOUFOX_GEOIP=1, zona horaria/idioma/WebRTC siguen a la IP de salida.
+  const geoip = process.env.CAMOUFOX_GEOIP === "1" || Boolean(proxy);
 
   return Camoufox({
     headless,
     humanize: true,
     locale: ["es-ES"],
+    ...(proxy ? { proxy } : {}),
     ...(noSandbox
       ? {
           env: {
@@ -49,8 +60,8 @@ export async function launchBrowser(opts: LaunchOptions = {}): Promise<Browser> 
 }
 
 export async function newContext(browser: Browser): Promise<BrowserContext> {
-  // Con geoip la zona horaria la fija Camoufox según la IP de salida.
-  if (process.env.CAMOUFOX_GEOIP === "1") {
+  // Con geoip o proxy la zona horaria la fija Camoufox según la IP de salida.
+  if (process.env.CAMOUFOX_GEOIP === "1" || process.env.PROXY_SERVER) {
     return browser.newContext({ locale: "es-ES" });
   }
   return browser.newContext({
