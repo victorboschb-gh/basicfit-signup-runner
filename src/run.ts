@@ -93,7 +93,9 @@ async function main(): Promise<void> {
   const browser = await launchBrowser();
   const context = await newContext(browser);
 
-  if (config.resume && state.storageStatePath && existsSync(state.storageStatePath)) {
+  // Solo se restauran cookies si el alta sigue pendiente. Con el alta ya hecha
+  // el registro va por email y cookies viejas pueden dejar la web en mal estado.
+  if (config.resume && !state.signupDone && state.storageStatePath && existsSync(state.storageStatePath)) {
     // Reutiliza cookies de la ejecución anterior en el mismo origen.
     const saved = JSON.parse(readFileSync(state.storageStatePath, "utf8")) as {
       cookies?: Parameters<typeof context.addCookies>[0];
